@@ -1,8 +1,10 @@
-#include <iostream>
+
+#include <chrono>
 #include <fstream>
-#include <vector>
+#include <iostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 #include "matrix_io.hpp"
 
 Matrix multiplyMatricesCPU(const Matrix& A, const Matrix& B) {
@@ -13,7 +15,7 @@ Matrix multiplyMatricesCPU(const Matrix& A, const Matrix& B) {
     Matrix C;
     C.rows = A.rows;
     C.cols = B.cols;
-    C.data.assign(C.rows * C.cols, 0.0); 
+    C.data.assign(C.rows * C.cols, 0.0);
 
     for (int i = 0; i < A.rows; ++i) {
         for (int j = 0; j < B.cols; ++j) {
@@ -39,17 +41,22 @@ int main(int argc, char* argv[]) {
     std::string outputFile = (argc == 3) ? argv[2] : "";
 
     try {
-        // read input file
         std::ifstream inFile(inputFile);
         if (!inFile.is_open()) {
             throw std::runtime_error("Could not open input file: " + inputFile);
         }
-        // parse Matrix A and Matrix B using shared library
         Matrix A = readMatrix(inFile);
         Matrix B = readMatrix(inFile);
         inFile.close();
 
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+
         Matrix C = multiplyMatricesCPU(A, B);
+
+        // stop timer
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> duration = end - start;
 
         if (!outputFile.empty()) {
             std::ofstream outFile(outputFile);
@@ -58,10 +65,12 @@ int main(int argc, char* argv[]) {
             }
             writeMatrix(outFile, C);
             outFile.close();
-            std::cout << "Successfully wrote output to " << outputFile << "\n";
         } else {
             writeMatrix(std::cout, C);
         }
+
+        // print duration
+        std::cout << duration.count() << "\n";
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
